@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 6px;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+        }
+        h2 {
+            text-align: center;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+    <h2>📄 Intervention Report</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>School</th>
+                <th>Reported By</th>
+                <th>Date</th>
+                <th>Reviewed</th>
+                <th>Visited</th>
+                <th>Completed</th>
+                <th>Problem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in interventions %}
+            <tr>
+                <td>{{ i[0] }}</td>
+                <td>{{ i[1] }}</td>
+                <td>{{ i[2] }}</td>
+                <td>{{ 'Yes' if i[3] else 'No' }}</td>
+                <td>{{ 'Yes' if i[4] else 'No' }}</td>
+                <td>{{ 'Yes' if i[5] else 'No' }}</td>
+                <td>{{ i[6] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
