@@ -2,35 +2,45 @@
 <html>
 <head>
     <title>Intervention Report</title>
+    <!-- رابط Bootstrap علشان التنسيق الجاهز للشكل -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
+<body class="bg-light"> <!-- خلفية الموقع بلون فاتح -->
+
+    <div class="container mt-5"> <!-- حاوية وسطية بمسافة من فوق -->
+
         <h2 class="text-center text-primary mb-4">📋 Intervention Report</h2>
+        <!-- عنوان التقرير، متوسّط ومتلون باللون الأساسي -->
 
         {% if 'user' in session %}
+        <!-- لو فيه يوزر في السيشن (يعني مسجل دخول) -->
         <p class="text-end">
             👋 Logged in as <strong>{{ session['user'] }}</strong>
             | <a href="/logout" class="btn btn-sm btn-outline-danger">🚪 Logout</a>
         </p>
         {% endif %}
 
-        <!-- Filter Form -->
+        <!-- ✅ فورم فلترة المدارس -->
         <form method="POST" class="row g-3 mb-4">
             <div class="col-md-6">
+                <!-- Dropdown لاختيار مدرسة معينة -->
                 <select name="school_filter" class="form-select">
                     <option value="">-- All Schools --</option>
                     {% for school in schools %}
-                        <option value="{{ school[0] }}" {% if selected_school == school[0]|string %}selected{% endif %}>{{ school[1] }}</option>
+                        <!-- لو المدرسة متساوية مع الفلتر المختار، نعلّمها selected -->
+                        <option value="{{ school[0] }}" {% if selected_school == school[0]|string %}selected{% endif %}>
+                            {{ school[1] }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
+                <!-- زرار الفلترة -->
                 <button type="submit" class="btn btn-primary w-100">Filter</button>
             </div>
         </form>
 
-        <!-- Table -->
+        <!-- ✅ الجدول الرئيسي للعرض -->
         <div class="table-responsive shadow-sm rounded">
             <table class="table table-bordered table-striped table-hover">
                 <thead class="table-success">
@@ -43,31 +53,39 @@
                         <th>Visited</th>
                         <th>Completed</th>
                         <th>Problem</th>
+                        <th>Edit</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for i in interventions %}
+                    <!-- كل صف في الجدول بيعرض تدخل واحد -->
                     <tr>
-                        <td>{{ i[0] }}</td>
-                        <td>{{ i[1] }}</td>
-                        <td>{{ i[2] }}</td>
-                        <td>{{ i[3] }}</td>
-                        <td>{{ 'Yes' if i[4] else 'No' }}</td>
-                        <td>{{ 'Yes' if i[5] else 'No' }}</td>
-                        <td>{{ 'Yes' if i[6] else 'No' }}</td>
-                        <td>{{ i[7] }}</td>
+                        <td>{{ i[0] }}</td> <!-- ID -->
+                        <td>{{ i[1] }}</td> <!-- اسم المدرسة -->
+                        <td>{{ i[2] }}</td> <!-- اللي أبلغ عن المشكلة -->
+                        <td>{{ i[3] }}</td> <!-- التاريخ -->
+                        <td>{{ 'Yes' if i[4] else 'No' }}</td> <!-- تم مراجعة التكوين؟ -->
+                        <td>{{ 'Yes' if i[5] else 'No' }}</td> <!-- زيارة ميدانية؟ -->
+                        <td>{{ 'Yes' if i[6] else 'No' }}</td> <!-- تم الإصلاح النهائي؟ -->
+                        <td>{{ i[7] }}</td> <!-- وصف المشكلة -->
+                        <td>
+                            <a href="/edit_intervention/{{ i[0] }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <!-- ✅ زر لتحميل نسخة PDF -->
         <a href="/download_pdf" class="btn btn-outline-success">📄 Download PDF</a>
 
-        <!-- Buttons -->
+        <!-- ✅ أزرار أخرى -->
         <div class="mt-4 d-flex justify-content-between">
             <a href="/download_csv" class="btn btn-outline-primary">📥 Download CSV</a>
             <a href="/" class="btn btn-outline-secondary">⬅️ Back to Form</a>
         </div>
+
     </div>
 </body>
 </html>

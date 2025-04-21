@@ -8,12 +8,22 @@
     <div class="container mt-5">
         <h2 class="text-center text-primary mb-4">🚑 New Intervention Form</h2>
         <form method="POST" action="/submit" class="card p-4 shadow">
+             <!-- Dropdown للمدن -->
             <div class="mb-3">
-                <label class="form-label">School Location</label>
-                <select name="location_id" class="form-select" required>
-                    {% for location in locations %}
-                        <option value="{{ location[0] }}">{{ location[1] }}</option>
+                <label for="city_id" class="form-label">City</label>
+                <select id="city_id" name="city_id" class="form-select" onchange="fetchLocations(this.value)">
+                    <option value="">Select City</option>
+                    {% for city in cities %}
+                        <option value="{{ city[0] }}">{{ city[1] }}</option>
                     {% endfor %}
+                </select>
+            </div>
+
+             <!-- Dropdown للمدارس -->
+            <div class="mb-3">
+                <label for="location_id" class="form-label">School</label>
+                <select id="location_id" name="location_id" class="form-select">
+                    <option value="">Select School</option>
                 </select>
             </div>
             <div class="mb-3">
@@ -47,5 +57,27 @@
             <button type="submit" class="btn btn-primary w-100">Submit</button>
         </form>
     </div>
+    <script>
+        function fetchLocations(cityId) {
+            const locationDropdown = document.getElementById("location_id");
+            locationDropdown.innerHTML = "<option value=''>Loading...</option>";
+        
+            fetch(`/get_locations/${cityId}`)
+                .then(response => response.json())
+                .then(data => {
+                    locationDropdown.innerHTML = "<option value=''>Select School</option>";
+                    data.forEach(loc => {
+                        const option = document.createElement("option");
+                        option.value = loc[0];
+                        option.textContent = loc[1];
+                        locationDropdown.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    locationDropdown.innerHTML = "<option value=''>Error loading schools</option>";
+                    console.error("Error:", error);
+                });
+        }
+        </script>
 </body>
 </html>

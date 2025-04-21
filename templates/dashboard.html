@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h2 class="mb-4 text-center text-primary">📊 Intervention Dashboard</h2>
+
+        <!-- Summary Cards -->
+        <div class="row text-center mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Interventions</h5>
+                        <p class="display-6 text-primary">{{ total }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Completed</h5>
+                        <p class="display-6 text-success">{{ completed }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Not Completed</h5>
+                        <p class="display-6 text-danger">{{ incomplete }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top City -->
+        <div class="alert alert-info text-center">
+            🏙️ Most Active City: 
+            <strong>{{ top_city[0] if top_city else 'N/A' }}</strong> 
+            ({{ top_city[1] if top_city else 0 }} interventions)
+        </div>
+
+        <!-- Last 5 Interventions -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                🕵️‍♀️ Recent 5 Interventions
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>School</th>
+                            <th>Date</th>
+                            <th>Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in recent %}
+                        <tr>
+                            <td>{{ i[0] }}</td>
+                            <td>{{ i[1] }}</td>
+                            <td>{{ i[2] }}</td>
+                            <td>{{ '✅' if i[3] else '❌' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-outline-primary">⬅️ Back to Form</a>
+        </div>
+    </div>
+    <div class="mt-5">
+        <h5 class="text-center mb-3">📊 Interventions by City</h5>
+        <canvas id="cityChart" height="100"></canvas>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('cityChart').getContext('2d');
+    
+        const cityLabels = {{ chart_data | map(attribute=0) | list | tojson }};
+        const cityCounts = {{ chart_data | map(attribute=1) | list | tojson }};
+    
+        new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: cityLabels,
+        datasets: [{
+            label: 'Number of Interventions',
+            data: cityCounts,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            borderRadius: 5, // يعطي شكل حلو للبارز
+            hoverBackgroundColor: 'rgba(30, 144, 255, 0.9)' // لما تحط الماوس عليه
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `📍 ${context.label}: ${context.parsed.y} interventions`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1,
+                    color: '#444'
+                },
+                title: {
+                    display: true,
+                    text: 'Number of Interventions'
+                }
+            },
+            x: {
+                ticks: {
+                    color: '#444',
+                    autoSkip: false
+                }
+            }
+        }
+    }
+});
+
+    </script>
+    
+</body>
+</html>

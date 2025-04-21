@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session , jsonify
 import sqlite3
 import csv
 from flask import Response
@@ -34,12 +34,16 @@ def form():
     conn = sqlite3.connect('db/database.db')
     cursor = conn.cursor()
 
+    # جلب كل المدن
+    cursor.execute("SELECT id, city_name FROM cities")
+    cities = cursor.fetchall()
+
     # جلب كل المدارس
-    cursor.execute("SELECT id, school_name FROM locations")
+    cursor.execute("SELECT id, school_name, city_id FROM locations")
     locations = cursor.fetchall()
 
     conn.close()
-    return render_template('intervention_form.html', locations=locations)
+    return render_template('intervention_form.html', cities=cities, locations=locations)
 
 # استقبال البيانات
 @app.route('/submit', methods=['POST'])
@@ -74,11 +78,18 @@ def submit():
         int(data['final_completed']),
         data['intervention_date']
     ))
+    # بعد حفظ البيانات وقبل return:
+    cursor.execute("SELECT school_name FROM locations WHERE id = ?", (data['location_id'],))
+    school_name = cursor.fetchone()[0]
+
+    # ضيف اسم المدرسة على الداتا
+    data['school_name'] = school_name
 
     conn.commit()
     conn.close()
 
-    return f"<h2>✅ Intervention by {data['reported_by']} for school ID {data['location_id']} saved successfully!</h2>"
+    return render_template('success.html', data=data)
+
 @app.route('/report', methods=['GET', 'POST'])
 def report():
     if 'user' not in session:
@@ -173,6 +184,115 @@ def download_pdf():
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] = "attachment; filename=intervention_report.pdf"
     return response
+
+@app.route('/get_locations/<int:city_id>')
+def get_locations(city_id):
+    conn = sqlite3.connect('db/database.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, school_name FROM locations WHERE city_id = ?", (city_id,))
+    locations = cursor.fetchall()
+
+    conn.close()
+
+    # رجّعهم على شكل JSON
+    return jsonify(locations)
+
+@app.route('/dashboard')
+def dashboard():
+    conn = sqlite3.connect('db/database.db')
+    cursor = conn.cursor()
+
+    # عدد كل التدخلات
+    cursor.execute("SELECT COUNT(*) FROM interventions")
+    total_interventions = cursor.fetchone()[0]
+
+    # عدد المكتمل منها
+    cursor.execute("SELECT COUNT(*) FROM interventions WHERE final_completed = 1")
+    completed_interventions = cursor.fetchone()[0]
+
+    # عدد الغير مكتمل
+    cursor.execute("SELECT COUNT(*) FROM interventions WHERE final_completed = 0")
+    incomplete_interventions = cursor.fetchone()[0]
+
+    # عدد التدخلات لكل مدينة (للرسم البياني)
+    cursor.execute("""
+        SELECT cities.city_name, COUNT(*) 
+        FROM interventions
+        JOIN locations ON interventions.location_id = locations.id
+        JOIN cities ON locations.city_id = cities.id
+        GROUP BY cities.city_name
+    """)
+    chart_data = cursor.fetchall()
+
+    # أكثر مدينة فيها تدخلات
+    cursor.execute("""
+        SELECT cities.city_name, COUNT(*) as cnt 
+        FROM interventions 
+        JOIN locations ON interventions.location_id = locations.id 
+        JOIN cities ON locations.city_id = cities.id 
+        GROUP BY cities.city_name 
+        ORDER BY cnt DESC 
+        LIMIT 1
+    """)
+    top_city = cursor.fetchone()
+
+    # آخر 5 تدخلات
+    cursor.execute("""
+        SELECT interventions.id, locations.school_name, intervention_date, final_completed
+        FROM interventions
+        JOIN locations ON interventions.location_id = locations.id
+        ORDER BY intervention_date DESC
+        LIMIT 5
+    """)
+    recent_interventions = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        'dashboard.html',
+        total=total_interventions,
+        completed=completed_interventions,
+        incomplete=incomplete_interventions,
+        top_city=top_city,
+        recent=recent_interventions,
+        chart_data=chart_data
+    )
+@app.route('/edit_intervention/<int:id>', methods=['GET', 'POST'])
+def edit_intervention(id):
+    conn = sqlite3.connect('db/database.db')
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        reported_by = request.form['reported_by']
+        school_contact = request.form['school_contact_person']
+        problem = request.form['problem_description']
+        reviewed = 1 if 'configuration_reviewed' in request.form else 0
+        visit = 1 if 'onsite_visit' in request.form else 0
+        completed = 1 if 'final_completed' in request.form else 0
+        date = request.form['intervention_date']
+
+        cursor.execute("""
+            UPDATE interventions
+            SET reported_by=?, school_contact_person=?, problem_description=?,
+                configuration_reviewed=?, onsite_visit=?, final_completed=?, intervention_date=?
+            WHERE id=?
+        """, (reported_by, school_contact, problem, reviewed, visit, completed, date, id))
+
+        conn.commit()
+        conn.close()
+        return redirect('/report')
+
+    cursor.execute("SELECT * FROM interventions WHERE id=?", (id,))
+    intervention = cursor.fetchone()
+
+    cursor.execute("SELECT id, school_name FROM locations")
+    locations = cursor.fetchall()
+
+    conn.close()
+    return render_template('edit_intervention.html', intervention=intervention, locations=locations)
+
+
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=10000)
